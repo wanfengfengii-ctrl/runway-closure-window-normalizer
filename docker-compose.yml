@@ -13,10 +13,12 @@ services:
       start_period: 5s
 
   # One-shot acceptance service: runs the checks in app/verify.py against the
-  # live API and exits non-zero if any of them fail.
+  # live API and exits non-zero if any of them fail.  It reuses the image
+  # built for `api` — declaring `build:` here too would make both services
+  # race to tag the same image name during a parallel build.
   verify:
     image: runway-closure-planner
-    build: .
+    pull_policy: never
     depends_on:
       api:
         condition: service_healthy

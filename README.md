@@ -123,6 +123,9 @@ docker compose run --rm verify
 
 `verify` 服务等待 `api` 健康后执行 `app/verify.py` 中的验收用例
 （归并/裁剪/补集、空封闭、全覆盖、跑道隔离、各类 422），全部通过才退出 0。
+镜像只由 `api` 服务构建一次，`verify` 通过同名镜像复用（不单独声明 `build`，
+避免两个服务并行构建同一镜像名时相互冲突），因此请通过上述 compose 命令构建，
+不要对 `verify` 单独执行 `docker compose build verify`。
 
 ### 本地开发（Python 3.12）
 
