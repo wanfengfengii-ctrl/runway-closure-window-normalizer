@@ -111,16 +111,26 @@ curl -s -X POST http://localhost:8000/api/v1/runway-windows \
 ### Docker Compose（推荐）
 
 ```bash
-# 启动 API（常驻服务，宿主端口默认 8000，可用 API_PORT 覆盖）
-docker compose up --build api
-API_PORT=9000 docker compose up --build api
+# 1) 启动 API（常驻服务，宿主端口默认 8000，可用 API_PORT 覆盖）
+docker compose up --build -d api
+API_PORT=9000 docker compose up --build -d api
 
-# 一次性验收：显式启用 verify profile，任一检查失败则以非零码退出
-docker compose --profile verify up --build --exit-code-from verify
-
-# 或 API 已在运行时单独执行验收（退出码即验收结果，API 保持运行）
+# 2) 一次性验收：退出码即验收结果；run 只运行 verify 自身，
+#    其退出不会停止已启动的 api 依赖容器
 docker compose run --rm verify
+
+# 3) 验收后 API 仍在运行，健康检查与接口可继续访问
+curl http://localhost:${API_PORT:-8000}/health
+
+# 4) 用完清理
+docker compose down
 ```
+
+若希望验收结束后自动拆除全部容器（如 CI 场景），可改用
+`docker compose --profile verify up --build --exit-code-from verify`。
+注意：`--exit-code-from` 隐含 `--abort-on-container-exit`,verify 一退出
+compose 就会停止包括 `api` 在内的所有容器——这是该标志的设计行为，
+日常联调需要 API 保持在线时请使用上面的 `run --rm` 方式。
 
 `verify` 服务等待 `api` 健康后执行 `app/verify.py` 中的验收用例
 （归并/裁剪/补集、空封闭、全覆盖、跑道隔离、各类 422），全部通过才退出 0。
