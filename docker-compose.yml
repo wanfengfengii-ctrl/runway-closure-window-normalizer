@@ -16,7 +16,16 @@ services:
   # live API and exits non-zero if any of them fail.  It reuses the image
   # built for `api` — declaring `build:` here too would make both services
   # race to tag the same image name during a parallel build.
+  #
+  # It lives behind the `verify` profile so a plain `docker compose up` only
+  # manages the long-running API.  A one-shot container in the default set
+  # would make `up` tear down the API (and its healthchecks) as soon as the
+  # checks finish, and some compose versions then judge the whole startup as
+  # failed.  Run it explicitly:
+  #   docker compose --profile verify up --build --exit-code-from verify
+  #   docker compose run --rm verify
   verify:
+    profiles: ["verify"]
     image: runway-closure-planner
     pull_policy: never
     depends_on:

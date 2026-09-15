@@ -111,13 +111,14 @@ curl -s -X POST http://localhost:8000/api/v1/runway-windows \
 ### Docker Compose（推荐）
 
 ```bash
-# 启动 API（宿主端口默认 8000，可用 API_PORT 覆盖）
+# 启动 API（常驻服务，宿主端口默认 8000，可用 API_PORT 覆盖）
 docker compose up --build api
 API_PORT=9000 docker compose up --build api
 
-# 一次性验收：对运行中的 API 执行验收检查，任一失败则以非零码退出
-docker compose up --build --exit-code-from verify
-# 或等 API 已在运行时：
+# 一次性验收：显式启用 verify profile，任一检查失败则以非零码退出
+docker compose --profile verify up --build --exit-code-from verify
+
+# 或 API 已在运行时单独执行验收（退出码即验收结果，API 保持运行）
 docker compose run --rm verify
 ```
 
@@ -126,6 +127,11 @@ docker compose run --rm verify
 镜像只由 `api` 服务构建一次，`verify` 通过同名镜像复用（不单独声明 `build`，
 避免两个服务并行构建同一镜像名时相互冲突），因此请通过上述 compose 命令构建，
 不要对 `verify` 单独执行 `docker compose build verify`。
+
+`verify` 位于 `verify` profile 下，不参与默认启动：一次性容器若与常驻的 `api`
+同在默认启动集合，验收结束退出时会连带停止 `api`（健康检查随之中断），且部分
+compose 版本会把"服务容器已退出"判定为整体启动失败。隔离后 `docker compose up`
+只管理常驻 API，验收按需显式触发，两者互不干扰。
 
 ### 本地开发（Python 3.12）
 
